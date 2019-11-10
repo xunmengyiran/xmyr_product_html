@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<title>寻梦依然</title>
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+		<meta name="renderer" content="webkit">
+		<meta http-equiv="Cache-Control" content="no-siteapp" />
+		<link rel="icon" type="image/png" href="/theme/default/images/favicon.png">
+		<link href="css/amazeui.min.css" rel="stylesheet" type="text/css" />
+		<link href="css/style.css" rel="stylesheet" type="text/css" />
+		<link rel="stylesheet" href="css/loading.css" />
+		<link rel="stylesheet" href="css/loaders.min.css" />
+		<script src="js/jquery.min.js"></script>
+		<script src="js/amazeui.min.js"></script>
+		<!-- <script src="js/time.js"></script> -->
+		<script type="text/javascript">
+			var currPage = 1;
+			// var isScroll = true;
+			var beforeScrollTop = 0;
+			var addPage = false;
+			$('body,html').animate({
+				scrollTop: 0
+			}, 500);
+			
+			//获取banner列表
+			$.get("http://localhost:30000/xmyr/home/querybannerforlist",function(data,status){
+				$.each(data,function(i,b){
+					$(".am-slides").append("<li><img src='"+b.imgSrc+"' /></li>");
+				});
+			});
+			
+			$(document).ready(function() {
+				timers = null;
+				$(".loading").addClass("loader-chanage")
+				$(".loading").fadeOut(500)
+				queryProductForList(1, $("#keys").val().trim());
+				
+				// 获取所有分类列表
+				$.get("http://localhost:30000/xmyr/home/querycategoryforlist", function(data, status) {
+					$.each(data, function(i, c) {
+						$("#categoryList").append("<li>" +
+							"<div class='am-gallery-item'>" +
+							"<a href='newproduct.html'>" +
+							"<img src='" + c.imgSrc + "' />" +
+							"<p>" + c.categoryName + "</p>" +
+							"</a>" +
+							"</div>" +
+							"</li>"
+						);
+					});
+				});
+				// 搜索
+				$("#search").click(function() {
+					// 点击搜索后重置当前页为第一页
+					currPage = 1;
+					var keys = $("#keys").val();
+					$("#productList").empty();
+					$('body,html').animate({
+						scrollTop: 0
+					}, 500);
+					// isScroll = false;
+					$("#productList").empty();
+					queryProductForList(currPage, keys)
+				});
+
+				/*  */// 上拉加载数据
+				$(window).scroll(function() {
+					// console.log("isScroll"+isScroll);
+					//$(window).scrollTop()这个方法是当前滚动条滚动的距离
+					var scrollTop = $(window).scrollTop();
+					var cz = scrollTop - beforeScrollTop;
+					// console.log("==差值=="+cz)
+					beforeScrollTop = scrollTop;
+					
+					// console.log("当前滚动条滚动的距离"+scrollTop);
+					//$(window).height()获取当前窗体的高度
+					// console.log("获取当前窗体的高度"+$(window).height());
+					//$(document).height()获取当前文档的高度
+					// console.log("获取当前文档的高度"+$(document).height());
+				/* 	if($(window).scrollTop() == 0){
+						isScroll = true;
+					} */
+					var bot = 50; //bot是底部距离的高度
+					if (cz>0&&(bot + $(window).scrollTop()) >= ($(document).height() - $(window).height())) {
+						// if (cz>0&&(bot + $(window).scrollTop()) >= $(window).height()) {
+						//当底部基本距离+滚动的高度〉=文档的高度-窗体的高度时；
+						//我们需要去异步加载数据了
+						clearTimeout(timers);
+						//这里还可以用 [ 延时执行 ] 来控制是否加载 （这样就解决了 当上页的条件满足时，一下子加载多次的问题啦）
+						timers = setTimeout(function() {
+							var keys = $("#keys").val().trim();
+							console.log("==addPage=="+addPage)
+							if(addPage){
+								currPage = currPage+1;
+							}
+							console.log(new Date()+"===>"+currPage)
+							queryProductForList(currPage, keys);
+						}, 500);
+					}
+				});
+			}); 
+
+			function queryProductForList(currPage, keys) {
+				console.log(currPage,keys);
+				$.get("http://localhost:30000/xmyr/home/queryproductforlist", {
+					keys: keys,
+					currPage: currPage
+				}, function(data, status) {
+					console.log("==data length=="+data.length);
+					if(data.length>0){
+						addPage = true;
+						$.each(data, function(i, p) {
+							$("#productList").append(
+								"<li>" +
+								"<div class='am-gallery-item'>" +
+								"<a href='detail.html'>" +
+								"<img src='" + p.smallImgSrc + "'/>" +
+								"<h3 class='am-gallery-title'>" + p.productTitle + "</h3>" +
+								"<div class='am-gallery-desc'>￥" + p.actualPrice +
+								"<del id='del_" + p.id + "'></del></div></a></div></li>"
+							);
+							if (1 == p.haveDiscount) {
+								$("#del_" + p.id).html("￥" + p.originalPrice)
+							}
+						})
+					}else{
+						addPage = false;
+					}
+				});
+			}
+		</script>
+	</head>
+	<body>
+		<div class="loading">
+			<div class="loader">
+				<div class="loader-inner pacman">
+					<div></div>
+					<div></div>
+					<div></div>
+					<div></div>
+					<div></div>
+				</div>
+			</div>
+		</div>
+		<!--头部-->
+		<div class="am-slider am-slider-default" data-am-flexslider id="demo-slider-0" style="position: relative;">
+			<header data-am-widget="header" class="am-header am-header-default tm-head sortbar-fixed" id="shortbar">
+				<div class="am-header-left am-header-nav">
+					<a href="city.html" class="">
+						<img src="images/city.png" />
+						<p style="font-size: 12px; margin-top: -35px;">苏州</p>
+					</a>
+				</div>
+				
+				<h1 class="am-header-title1">
+					<div class="search-box">
+						<input type="text" id="keys" name="keys" class="index-search" placeholder="寻找你喜欢的商品......" />
+						<input id="search" type="submit" value="" class="search-icon" />
+						<!-- <input  type="submit" value="" class="search-btn" /> -->
+					</div>
+				</h1>
+				
+				<div class="am-header-right am-header-nav">
+					<a href="" class="">
+					   <img src="images/sao.png" />
+					   <p style="font-size: 12px; margin-top: -35px;">扫一扫</p>
+					</a>
+				</div>
+			</header>
+			<div id="bannerList">
+				<ul class='am-slides'>
+					<!-- banner列表 -->
+				</ul>
+			</div>
+		</div>
+		<!--导航-->
+		<ul id="categoryList" class="sq-nav">
+			<!-- 分类列表 -->
+		</ul>
+
+		<!-- 特色专区-->
+		<!--  <div class="sq-title">
+ 	<img src="images/ts.png" width="24"/>
+ 	特色专区
+ </div> -->
+		<div class="whitebar">
+			<div class="am-tabs-bd">
+				<div data-tab-panel-0 class="am-tab-panel am-active">
+					<ul id="productList" data-am-widget="gallery" class="am-gallery special am-avg-sm-2 am-avg-md-3 am-avg-lg-4 am-gallery-default">
+						<!-- 产品列表 -->
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div id="dd1" style="height: 55px;"></div>
+		<!--底部-->
+		<div data-am-widget="navbar" class="am-navbar am-cf am-navbar-default sq-foot am-no-layout" id="">
+			<ul class="am-navbar-nav am-cf am-avg-sm-4">
+				<li>
+					<a href="index.html" class="curr">
+						<span><img src="images/home.png" /></span>
+						<span class="am-navbar-label ha">首页</span>
+					</a>
+				</li>
+				<li>
+					<a href="category.html" class="">
+						<span><img src="images/classify.png" /></span>
+						<span class="am-navbar-label">分类</span>
+					</a>
+				</li>
+
+				<li>
+					<a href="shopcart.html" class="">
+						<span><img src="images/cart.png" /></span>
+						<span class="am-navbar-label">购物车</span>
+					</a>
+				</li>
+				<li>
+					<a href="login.html" class="">
+						<span><img src="images/me.png" /></span>
+						<span class="am-navbar-label">我的</span>
+					</a>
+				</li>
+			</ul>
+		</div>
+	</body>
+</html>
